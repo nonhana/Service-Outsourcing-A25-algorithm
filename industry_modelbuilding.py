@@ -1,14 +1,126 @@
 from py2neo import Graph
-import os
-import time
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-import torch
-from torch_geometric.data import Data
-from torch.nn import Linear
-from torch_geometric.nn import GCNConv
+
+class DataSource:
+    def __init__(self):
+        # 根节点
+        self.n_node = []
+        # 第一条边的相关属性
+        self.r1_startnode = []
+        self.r1_name = []
+        self.r1_endnode = []
+        # 第二节点
+        self.m1_node = []
+        # 第二条边的相关属性
+        self.r2_startnode = []
+        self.r2_name = []
+        self.r2_endnode = []
+        # 第三节点
+        self.m2_node = []
+        # 第三条边的相关属性
+        self.r3_startnode = []
+        self.r3_name = []
+        self.r3_endnode = []
+        # 第四节点==
+        self.m3_node = []
+        # 第四条边的相关属性
+        self.r4_startnode = []
+        self.r4_name = []
+        self.r4_endnode = []
+        # 第五节点(公司)
+        self.m4_node = []
+        # 第五条边的相关属性
+        self.r5_startnode = []
+        self.r5_name = []
+        self.r5_endnode = []
+        # 第六节点(产品小类)
+        self.m5_node = []
+        # 第六条边的相关属性
+        self.r6_startnode = []
+        self.r6_name = []
+        self.r6_endnode = []
+        # 第七节点
+        self.m6_node = []
+
+        file_handler = open('data.txt', mode='r')
+        node_num = 0
+        node_flag = False
+        edge_num = 0
+        edge_flag = 0
+        for line in file_handler:
+            # 设置读取状态
+            if line.strip().find('节点start===') != -1:
+                node_num = node_num+1
+                node_flag = True
+            if line.strip().find('节点end===') != -1:
+                node_flag = False
+            if line.strip().find('边start===') != -1:
+                edge_num = edge_num+1
+                edge_flag = 1
+            if edge_flag > 0 and line.strip() == '':
+                edge_flag = edge_flag+1
+            if line.strip().find('边end===') != -1:
+                edge_flag = 0
+
+            # 读取节点
+            if node_flag and line.strip() != '' and line.strip().find('节点end===') == -1 and line.strip().find('节点start===') == -1:
+                if node_num == 1:
+                    self.n_node.append(line.strip())
+                if node_num == 2:
+                    self.m1_node.append(line.strip())
+                if node_num == 3:
+                    self.m2_node.append(line.strip())
+                if node_num == 4:
+                    self.m3_node.append(line.strip())
+                if node_num == 5:
+                    self.m4_node.append(line.strip())
+                if node_num == 6:
+                    self.m5_node.append(line.strip())
+                if node_num == 7:
+                    self.m6_node.append(line.strip())
+            # 读取边
+            if edge_flag == 1 and line.strip() != '' and line.strip().find('边end===') == -1 and line.strip().find('边start===') == -1:
+                if edge_num == 1:
+                    self.r1_startnode.append(line.strip())
+                if edge_num == 2:
+                    self.r2_startnode.append(line.strip())
+                if edge_num == 3:
+                    self.r3_startnode.append(line.strip())
+                if edge_num == 4:
+                    self.r4_startnode.append(line.strip())
+                if edge_num == 5:
+                    self.r5_startnode.append(line.strip())
+                if edge_num == 6:
+                    self.r6_startnode.append(line.strip())
+            if edge_flag == 2 and line.strip() != '' and line.strip().find('边end===') == -1 and line.strip().find('边start===') == -1:
+                if edge_num == 1:
+                    self.r1_name.append(line.strip())
+                if edge_num == 2:
+                    self.r2_name.append(line.strip())
+                if edge_num == 3:
+                    self.r3_name.append(line.strip())
+                if edge_num == 4:
+                    self.r4_name.append(line.strip())
+                if edge_num == 5:
+                    self.r5_name.append(line.strip())
+                if edge_num == 6:
+                    self.r6_name.append(line.strip())
+            if edge_flag == 3 and line.strip() != '' and line.strip().find('边end===') == -1 and line.strip().find('边start===') == -1:
+                if edge_num == 1:
+                    self.r1_endnode.append(line.strip())
+                if edge_num == 2:
+                    self.r2_endnode.append(line.strip())
+                if edge_num == 3:
+                    self.r3_endnode.append(line.strip())
+                if edge_num == 4:
+                    self.r4_endnode.append(line.strip())
+                if edge_num == 5:
+                    self.r5_endnode.append(line.strip())
+                if edge_num == 6:
+                    self.r6_endnode.append(line.strip())
 
 
 # 连接Neo4j数据库并读取数据，将数据存到data.txt文件内
@@ -58,7 +170,7 @@ class ReadGraph:
     # 查询
 
     def query(self):
-        # 打开data.txt文件
+        # 打开data.txt文件，准备将数据进行写入
         file_handle = open('data.txt', mode='w')
 
         # 定义cql语句
@@ -85,10 +197,10 @@ class ReadGraph:
             record = list(n[i].values())
             result = list(record[0].values())[1]
             self.n_node.append(result)
-            file_handle.write(result+"\n")
         self.n_node = list(set(self.n_node))
+        for item in self.n_node:
+            file_handle.write(item+'\n')
         file_handle.write('===根节点end===\n')
-
         # print(self.n_node)
 
         # 第一条边
@@ -122,9 +234,10 @@ class ReadGraph:
             record = list(m1[i].values())
             result = list(record[0].values())[1]
             self.m1_node.append(result)
-            file_handle.write(result+"\n")
-        file_handle.write('===第二节点end===\n')
         self.m1_node = list(set(self.m1_node))
+        for item in self.m1_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第二节点end===\n')
         # print(self.m1_node)
 
         # 第二条边
@@ -158,9 +271,10 @@ class ReadGraph:
             record = list(m2[i].values())
             result = list(record[0].values())[1]
             self.m2_node.append(result)
-            file_handle.write(result+'\n')
-        file_handle.write('===第二节点end===\n')
         self.m2_node = list(set(self.m2_node))
+        for item in self.m2_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第二节点end===\n')
         # print(self.m2_node)
 
         # 第三条边
@@ -194,9 +308,10 @@ class ReadGraph:
             record = list(m3[i].values())
             result = list(record[0].values())[1]
             self.m3_node.append(result)
-            file_handle.write(result+'\n')
-        file_handle.write('===第四节点end===\n')
         self.m3_node = list(set(self.m3_node))
+        for item in self.m3_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第四节点end===\n')
         # print(self.m3_node)
 
         # 第四条边
@@ -230,9 +345,10 @@ class ReadGraph:
             record = list(m4[i].values())
             result = list(record[0].values())[0]
             self.m4_node.append(result)
-            file_handle.write(result+'\n')
-        file_handle.write('===第五节点end===\n')
         self.m4_node = list(set(self.m4_node))
+        for item in self.m4_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第五节点end===\n')
         # print(self.m4_node)
 
         # 第五条边
@@ -266,9 +382,10 @@ class ReadGraph:
             record = list(m5[i].values())
             result = list(record[0].values())[0]
             self.m5_node.append(result)
-            file_handle.write(result+'\n')
-        file_handle.write('===第六节点end===\n')
         self.m5_node = list(set(self.m5_node))
+        for item in self.m5_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第六节点end===\n')
         # print(self.m5_node)
 
         # 第六条边
@@ -302,15 +419,17 @@ class ReadGraph:
             record = list(m6[i].values())
             result = list(record[0].values())[0]
             self.m6_node.append(result)
-            file_handle.write(result+'\n')
-        file_handle.write('===第七节点end===\n')
         self.m6_node = list(set(self.m6_node))
+        for item in self.m6_node:
+            file_handle.write(item+'\n')
+        file_handle.write('===第七节点end===\n')
         # print(self.m6_node)
 
+        # 写入完毕后，关闭文件
         file_handle.close()
+
+
 # 实现邻接表
-
-
 class Vertex:
     def __init__(self, key, type, name):
         self.id = key
@@ -434,153 +553,71 @@ class IndustryGraph:
         return iter(self.vertList.values())
 
 
-# 构建GCN神经网络
-# class GCN(torch.nn.Module):
-#     def __init__(self, num_features, num_classes):
-#         super(GCN, self).__init__()
-#         torch.manual_seed(520)
-#         self.num_features = num_features
-#         self.num_classes = num_classes
-#         self.conv1 = GCNConv(self.num_features, 4)  # 只定义子输入特证和输出特证即可
-#         self.conv2 = GCNConv(4, 4)
-#         self.conv3 = GCNConv(4, 2)
-#         self.classifier = Linear(2, self.num_classes)
-
-#     def forward(self, x, edge_index):
-#         # 3层GCN
-#         h = self.conv1(x, edge_index)  # 给入特征与邻接矩阵（注意格式，上面那种）
-#         h = h.tanh()
-#         h = self.conv2(h, edge_index)
-#         h = h.tanh()
-#         h = self.conv3(h, edge_index)
-#         h = h.tanh()
-#         # 分类层
-#         out = self.classifier(h)
-        # return out, h
-
-
-# 画点函数
-# def visualize_embedding(h, color, epoch=None, loss=None):
-#     plt.figure(figsize=(7, 7))
-#     plt.xticks([])
-#     plt.yticks([])
-#     h = h.detach().cpu().numpy()
-#     plt.scatter(h[:, 0], h[:, 1], s=140, c=color, cmap="Set2")
-#     if epoch is not None and loss is not None:
-#         plt.xlabel(f'Epoch:{epoch},Loss:{loss.item():.4f}', fontsize=16)
-#     plt.show()
-
-
-# 训练函数
-# def train(data):
-#     optimizer.zero_grad()
-#     out, h = model(data.x, data.edge_index)
-#     loss = criterion(out[data.train_mask], data.y[data.train_mask])
-#     loss.backward()
-#     optimizer.step()
-#     return loss, h
-
 if __name__ == "__main__":
-    # 连接数据库并读取数据
-    handler = ReadGraph()
-    handler.query()
+    # # 连接数据库并读取数据
+    # handler = ReadGraph()
+    # handler.query()
 
-    # 添加顶点
-    g = IndustryGraph()
-    # 根节点
-    g.addVertex(g.getVertices(), "industry", handler.n_node[0])
-    # 一级产业
-    for item in handler.m1_node:
-        g.addVertex(g.getVertices(), "industry", item)
-    # 二级产业
-    for item in handler.m2_node:
-        g.addVertex(g.getVertices(), "industry", item)
-    # 公司
-    for item in handler.m3_node:
-        g.addVertex(g.getVertices(), "company", item)
-    # 主营产品
-    for item in handler.m4_node:
-        g.addVertex(g.getVertices(), "product", item)
-    # 产品小类
-    for item in handler.m5_node:
-        g.addVertex(g.getVertices(), "littleproduct", item)
-    # 上游材料
-    for item in handler.m6_node:
-        g.addVertex(g.getVertices(), "material", item)
+    # # 添加顶点
+    # g = IndustryGraph()
+    # # 根节点
+    # g.addVertex(g.getVertices(), "industry", handler.n_node[0])
+    # # 一级产业
+    # for item in handler.m1_node:
+    #     g.addVertex(g.getVertices(), "industry", item)
+    # # 二级产业
+    # for item in handler.m2_node:
+    #     g.addVertex(g.getVertices(), "industry", item)
+    # # 公司
+    # for item in handler.m3_node:
+    #     g.addVertex(g.getVertices(), "company", item)
+    # # 主营产品
+    # for item in handler.m4_node:
+    #     g.addVertex(g.getVertices(), "product", item)
+    # # 产品小类
+    # for item in handler.m5_node:
+    #     g.addVertex(g.getVertices(), "littleproduct", item)
+    # # 上游材料
+    # for item in handler.m6_node:
+    #     g.addVertex(g.getVertices(), "material", item)
 
-    # 初始化邻接矩阵
-    g.initMatrix(g.getVertices())
+    # # 初始化邻接矩阵
+    # g.initMatrix(g.getVertices())
 
-    # 添加边和权重
-    # 一级产业-->根节点
-    for i in range(len(handler.r1_endnode)):
-        g.addEdge(g.name_labels.index(handler.r1_startnode[i]), g.name_labels.index(
-            handler.r1_endnode[i]), handler.r1_name[i], 1)
-    # 二级产业-->一级产业
-    for i in range(len(handler.r2_endnode)):
-        g.addEdge(g.name_labels.index(handler.r2_startnode[i]), g.name_labels.index(
-            handler.r2_endnode[i]), handler.r2_name[i], 1)
-    # 公司-->二级产业
-    for i in range(len(handler.r3_endnode)):
-        g.addEdge(g.name_labels.index(handler.r3_startnode[i]), g.name_labels.index(
-            handler.r3_endnode[i]), handler.r3_name[i], 1)
-    # 产品-->公司
-    for i in range(len(handler.r4_endnode)):
-        g.addEdge(g.name_labels.index(handler.r4_startnode[i]), g.name_labels.index(
-            handler.r4_endnode[i]), handler.r4_name[i], 1)
-    # 产品小类-->产品
-    for i in range(len(handler.r5_endnode)):
-        g.addEdge(g.name_labels.index(handler.r5_startnode[i]), g.name_labels.index(
-            handler.r5_endnode[i]), handler.r5_name[i], 1)
-    # 上游材料-->产品小类
-    for i in range(len(handler.r6_endnode)):
-        g.addEdge(g.name_labels.index(handler.r6_startnode[i]), g.name_labels.index(
-            handler.r6_endnode[i]), handler.r6_name[i], 1)
+    # # 添加边和权重
+    # # 一级产业-->根节点
+    # for i in range(len(handler.r1_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r1_startnode[i]), g.name_labels.index(
+    #         handler.r1_endnode[i]), handler.r1_name[i], 1)
+    # # 二级产业-->一级产业
+    # for i in range(len(handler.r2_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r2_startnode[i]), g.name_labels.index(
+    #         handler.r2_endnode[i]), handler.r2_name[i], 1)
+    # # 公司-->二级产业
+    # for i in range(len(handler.r3_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r3_startnode[i]), g.name_labels.index(
+    #         handler.r3_endnode[i]), handler.r3_name[i], 1)
+    # # 产品-->公司
+    # for i in range(len(handler.r4_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r4_startnode[i]), g.name_labels.index(
+    #         handler.r4_endnode[i]), handler.r4_name[i], 1)
+    # # 产品小类-->产品
+    # for i in range(len(handler.r5_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r5_startnode[i]), g.name_labels.index(
+    #         handler.r5_endnode[i]), handler.r5_name[i], 1)
+    # # 上游材料-->产品小类
+    # for i in range(len(handler.r6_endnode)):
+    #     g.addEdge(g.name_labels.index(handler.r6_startnode[i]), g.name_labels.index(
+    #         handler.r6_endnode[i]), handler.r6_name[i], 1)
 
-    # 输出邻接矩阵
-    # print(g.matrix)
+    # # 输出邻接矩阵
+    # # print(g.matrix)
 
-    # 画出拓扑结构
-    nx.draw(g.visble, node_size=100, node_color="skyblue")
-    plt.show()
+    # # 画出拓扑结构
+    # nx.draw(g.visble, node_size=100, node_color="skyblue")
+    # plt.show()
 
-    # 计算邻接矩阵的特征值和特征向量
-    # g.coculate()
+    # # 计算邻接矩阵的特征值和特征向量
+    # # g.coculate()
 
-    # 定义节点特征向量x和标签y
-    # x = torch.tensor(g.feature_vector, dtype=torch.float)
-    # y = torch.tensor(g.labels, dtype=torch.float)
-
-    # 定义边矩阵
-    # g.build_edge_matrix()
-    # edge_index = torch.tensor(g.edge_matrix, dtype=torch.long)
-
-    # 定义train_mask
-    # train_mask = [(True if d is not None else False) for d in y]
-
-    # 构建data
-    # indusry_data = Data(x=x, y=y, edge_index=edge_index, train_mask=train_mask)
-    # print("data:", indusry_data)
-    # print("train_mask:", indusry_data.train_mask)
-
-    # 不加这个可能会报错
-    # os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
-    # 数据集准备
-    # dataset = indusry_data
-    # # data = dataset[0]
-
-    # # 声明GCN模型
-    # model = GCN(dataset.num_features, dataset.num_classes)
-
-    # # 损失函数 交叉熵损失
-    # criterion = torch.nn.CrossEntropyLoss()
-    # # 优化器 Adam
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-    # # 训练
-    # for epoch in range(401):
-    #     loss, h = train(data)
-    #     if epoch % 100 == 0:
-    #         visualize_embedding(h, color=data.y, epoch=epoch, loss=loss)
-    #         time.slep(0.3)
+    data = DataSource()
