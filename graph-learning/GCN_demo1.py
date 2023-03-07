@@ -73,17 +73,19 @@ if __name__ == '__main__':
     dataset = KarateClub()
     data = dataset[0]
 
-    # 声明GCN模型
-    model = GCN(dataset.num_features, dataset.num_classes)
+    print(dataset)
 
-    # 损失函数 交叉熵损失
-    criterion = torch.nn.CrossEntropyLoss()
-    # 优化器 Adam
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    # # 声明GCN模型
+    # model = GCN(dataset.num_features, dataset.num_classes)
 
-    # 训练
-    for epoch in range(401):
-        loss, h = train(data)
-        if epoch % 100 == 0:
-            visualize_embedding(h, color=data.y, epoch=epoch, loss=loss)
-            time.slep(0.3)
+    # # 损失函数 交叉熵损失
+    # criterion = torch.nn.CrossEntropyLoss()
+    # # 优化器 Adam
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+    # # 训练
+    # for epoch in range(401):
+    #     loss, h = train(data)
+    #     if epoch % 100 == 0:
+    #         visualize_embedding(h, color=data.y, epoch=epoch, loss=loss)
+    #         time.slep(0.3)
