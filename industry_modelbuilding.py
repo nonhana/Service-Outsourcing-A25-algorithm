@@ -156,12 +156,18 @@ class IndustryGraph:
     def __init__(self):
         # {}代表字典
         self.vertList = {}
+        # 邻接矩阵
         self.matrix = []
+        # 总的节点个数
         self.numVertices = 0
         self.visble = nx.Graph()
+        # 特征向量
         self.feature_vector = []
+        # 记录第n个节点的位置n
         self.labels = []
+        # 节点名称数组
         self.name_labels = []
+        # 边矩阵
         self.edge_matrix = []
 
     # 增加顶点，具有属性：id，类型，名称
