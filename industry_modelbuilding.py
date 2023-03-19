@@ -44,7 +44,7 @@ class DataSource:
         # 第七节点
         self.m6_node = []
 
-        file_handler = open('data.txt', mode='r')
+        file_handler = open('data改性塑料.txt', mode='r')
         node_num = 0
         node_flag = False
         edge_num = 0
@@ -67,19 +67,26 @@ class DataSource:
             # 读取节点
             if node_flag and line.strip() != '' and line.strip().find('节点end===') == -1 and line.strip().find('节点start===') == -1:
                 if node_num == 1:
-                    self.n_node.append(line.strip())
+                    if line.strip() not in self.n_node:
+                        self.n_node.append(line.strip())
                 if node_num == 2:
-                    self.m1_node.append(line.strip())
+                    if line.strip() not in self.m1_node:
+                        self.m1_node.append(line.strip())
                 if node_num == 3:
-                    self.m2_node.append(line.strip())
+                    if line.strip() not in self.m2_node:
+                        self.m2_node.append(line.strip())
                 if node_num == 4:
-                    self.m3_node.append(line.strip())
+                    if line.strip() not in self.m3_node:
+                        self.m3_node.append(line.strip())
                 if node_num == 5:
-                    self.m4_node.append(line.strip())
+                    if line.strip() not in self.m4_node:
+                        self.m4_node.append(line.strip())
                 if node_num == 6:
-                    self.m5_node.append(line.strip())
+                    if line.strip() not in self.m5_node:
+                        self.m5_node.append(line.strip())
                 if node_num == 7:
-                    self.m6_node.append(line.strip())
+                    if line.strip() not in self.m6_node:
+                        self.m6_node.append(line.strip())
             # 读取边
             if edge_flag == 1 and line.strip() != '' and line.strip().find('边end===') == -1 and line.strip().find('边start===') == -1:
                 if edge_num == 1:
@@ -173,7 +180,8 @@ class IndustryGraph:
     # 增加顶点，具有属性：id，类型，名称
     def addVertex(self, key, type, name):
         self.labels.append(self.numVertices)
-        self.name_labels.append(name)
+        if name not in self.name_labels:
+            self.name_labels.append(name)
         self.numVertices += 1
         self.visble.add_node(key)
         newVertex = Vertex(key, type, name)
@@ -216,21 +224,8 @@ class IndustryGraph:
         for i in range(len(self.matrix)):
             print(self.matrix[i])
 
-    # 计算邻接矩阵的特征值、特征向量
-    def calculate(self):
-        mat = np.array(self.matrix)
-        eigenvalue, featurevector = np.linalg.eig(mat)
-        # print("特征值：", eigenvalue)
-        # print("特征向量：", featurevector)
-        # 将每个点的特征向量从计算结果中取出
-        for i in range(len(featurevector)):
-            feature_list = []
-            for j in range(len(featurevector)):
-                feature_list.append(featurevector[j][i])
-            self.feature_vector.append(feature_list)
-        return
-
     # 根据邻接矩阵写出边矩阵
+
     def build_edge_matrix(self):
         start = []
         end = []
@@ -251,6 +246,16 @@ class IndustryGraph:
     def __iter__(self):
         return iter(self.vertList.values())
 
+    # 计算节点的中心度作为特征值
+
+    def eigenvectorCentrality(self):
+        eigenvector = nx.eigenvector_centrality(self.visble)
+        for item in eigenvector:
+            list = []
+            list.append(eigenvector[item])
+            self.feature_vector.append(list)
+        return
+
 
 if __name__ == "__main__":
     # 连接数据库并读取数据
@@ -262,27 +267,33 @@ if __name__ == "__main__":
     g.addVertex(g.getVertices(), "industry", handler.n_node[0])
     # 一级产业
     for item in handler.m1_node:
-        g.addVertex(g.getVertices(), "industry", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "industry", item)
     # 二级产业
     for item in handler.m2_node:
-        g.addVertex(g.getVertices(), "industry", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "industry", item)
     # 公司
     for item in handler.m3_node:
-        g.addVertex(g.getVertices(), "company", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "company", item)
     # 主营产品
     for item in handler.m4_node:
-        g.addVertex(g.getVertices(), "product", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "product", item)
     # 产品小类
     for item in handler.m5_node:
-        g.addVertex(g.getVertices(), "littleproduct", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "littleproduct", item)
     # 上游材料
     for item in handler.m6_node:
-        g.addVertex(g.getVertices(), "material", item)
+        if item not in g.name_labels:
+            g.addVertex(g.getVertices(), "material", item)
 
     # 初始化邻接矩阵
     g.initMatrix(g.getVertices())
 
-    # 添加边和权重
+    # 添加边
     # 一级产业-->根节点
     for i in range(len(handler.r1_endnode)):
         g.addEdge(g.name_labels.index(handler.r1_startnode[i]), g.name_labels.index(
@@ -309,13 +320,14 @@ if __name__ == "__main__":
             handler.r6_endnode[i]), handler.r6_name[i], 1)
 
     # 输出邻接矩阵
-    # print(g.matrix)
+    print(g.matrix)
 
     # 画出拓扑结构
-    nx.draw(g.visble, node_size=100, node_color="skyblue")
-    plt.show()
+    # nx.draw(g.visble, node_size=100, node_color="skyblue", with_labels=True)
+    # plt.show()
 
-    # 计算邻接矩阵的特征值和特征向量
-    g.calculate()
-
+    # 计算节点特征值
+    g.eigenvectorCentrality()
     print(g.feature_vector)
+
+    print(len(g.name_labels))

@@ -1,7 +1,9 @@
 from py2neo import Graph
-
+import re
 
 # 连接Neo4j数据库并读取数据，将数据存到data.txt文件内
+
+
 class ReadGraph:
     def __init__(self):
         self.g = Graph('http://localhost:7474/', user='neo4j',
@@ -49,10 +51,10 @@ class ReadGraph:
 
     def query(self):
         # 打开data.txt文件，准备将数据进行写入
-        file_handle = open('data.txt', mode='w')
+        file_handle = open('data改性塑料.txt', mode='w')
 
         # 定义cql语句
-        cql = 'match (n:industry {name:"基础化工"})-[r1]-(m1:industry {name:"塑料"})-[r2]-(m2:industry {name:"膜材料"})-[r3]-(m3)-[r4]-(m4)-[r5]->(m5)-[r6:`上游材料`]-(m6) return n,r1,m1,r2,m2,r3,m3,r4,m4,r5,m5,r6,m6'
+        cql = 'match (n:industry {name:"基础化工"})-[r1]-(m1:industry {name:"塑料"})-[r2]-(m2:industry {name:"改性塑料"})-[r3]-(m3)-[r4]-(m4)-[r5]->(m5)-[r6:`上游材料`]-(m6) return n,r1,m1,r2,m2,r3,m3,r4,m4,r5,m5,r6,m6 limit 150'
 
         # 查询
         n = self.g.run(cql).data('n')
@@ -93,8 +95,11 @@ class ReadGraph:
         for i in range(len(edge_list)):
             self.r1_startnode.append(
                 edge_list[i][edge_list[i].index("(")+1:edge_list[i].index("-")-1])
+            string = edge_list[i][edge_list[i].index(
+                "[")+2:edge_list[i].index("]")]
             self.r1_name.append(
-                edge_list[i][edge_list[i].index("[")+2:edge_list[i].index("]")])
+                re.sub(r"'", "", string)
+            )
             self.r1_endnode.append(
                 edge_list[i][edge_list[i].index("]")+4:edge_list[i].index(")", len(edge_list[i])-1)])
         for item in self.r1_startnode:

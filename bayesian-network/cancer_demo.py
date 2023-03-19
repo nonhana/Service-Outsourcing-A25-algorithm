@@ -3,7 +3,9 @@ from pgmpy.inference import VariableElimination
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.models import BayesianNetwork
 
+
 # 这个贝叶斯网络中有五个节点: Pollution, Cancer, Smoker, Xray, Dyspnoea.
+# (item1,item2):item1有可能导致item2，有向边，从item1指向item2
 # ('Pollution', 'Cancer'): 一条有向边, 从 Pollution 指向 Cancer, 表示环境污染有可能导致癌症.
 # ('Smoker', 'Cancer'): 吸烟有可能导致癌症.
 # ('Cancer', 'Xray'): 得癌症的人可能会去照X射线.
@@ -20,7 +22,7 @@ cancer_model = BayesianNetwork([('Pollution', 'Cancer'),
 # Smoker: 有两种概率, 分别是 0.3 和 0.7. (意思是在一个人群里, 有 30% 的人吸烟, 有 70% 的人不吸烟)
 # Cancer: envidence 表示有 Smoker 和 Pollution 两个节点指向 Cancer 节点
 cpd_pollution = TabularCPD(variable='Pollution', variable_card=2,
-                      values=[[0.9], [0.1]])
+                           values=[[0.9], [0.1]])
 cpd_smoke = TabularCPD(variable='Smoker', variable_card=2,
                        values=[[0.3], [0.7]])
 cpd_cancer = TabularCPD(variable='Cancer', variable_card=2,
@@ -32,9 +34,10 @@ cpd_xray = TabularCPD(variable='Xray', variable_card=2,
                       values=[[0.9, 0.2], [0.1, 0.8]],
                       evidence=['Cancer'], evidence_card=[2])
 cpd_dyspnoea = TabularCPD(variable='Dyspnoea', variable_card=2,
-                      values=[[0.65, 0.3], [0.35, 0.7]],
-                      evidence=['Cancer'], evidence_card=[2])
-cancer_model.add_cpds(cpd_pollution, cpd_smoke, cpd_cancer, cpd_xray, cpd_dyspnoea)
+                          values=[[0.65, 0.3], [0.35, 0.7]],
+                          evidence=['Cancer'], evidence_card=[2])
+cancer_model.add_cpds(cpd_pollution, cpd_smoke,
+                      cpd_cancer, cpd_xray, cpd_dyspnoea)
 
 
 # 测试构建出来的网络结构
