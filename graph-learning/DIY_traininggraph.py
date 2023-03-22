@@ -10,7 +10,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # 画点函数
 def visualize_embedding(h, color, epoch=None, loss=None):
-    # figsize:生成圖像大小
+    # figsize:生成图像大小
     plt.figure(figsize=(7, 7))
     plt.xticks([])
     plt.yticks([])
@@ -30,7 +30,7 @@ class DataSet:
         edge_index = torch.tensor([[0, 1, 2, 0, 3],  # 起始点
                                    [1, 0, 1, 3, 2]], dtype=torch.long)  # 终止点
         # 定义train_mask
-        train_mask = [(True if d is not None else False) for d in y]
+        train_mask = torch.tensor([True, True, True, True])
         # 构建data
         self.data = Data(x=x, y=y, edge_index=edge_index,
                          train_mask=train_mask)
@@ -43,19 +43,16 @@ class GCN(torch.nn.Module):
         torch.manual_seed(520)
         self.num_features = num_features
         self.num_classes = num_classes
-        self.conv1 = GCNConv(self.num_features, 4)  # 只定义子输入特证和输出特证即可
-        self.conv2 = GCNConv(4, 4)
-        self.conv3 = GCNConv(4, 2)
-        self.classifier = Linear(2, self.num_classes)
+        self.conv1 = GCNConv(self.num_features, 16)
+        self.conv2 = GCNConv(16, self.num_classes)
+        self.classifier = Linear(self.num_classes, self.num_classes)
 
     def forward(self, x, edge_index):
-        # 3层GCN
-        h = self.conv1(x, edge_index)  # 给入特征与邻接矩阵（注意格式，上面那种）
-        h = h.tanh()
+        # 2层GCN
+        h = self.conv1(x, edge_index)
+        h = h.relu()
         h = self.conv2(h, edge_index)
-        h = h.tanh()
-        h = self.conv3(h, edge_index)
-        h = h.tanh()
+        h = h.relu()
         # 分类层
         out = self.classifier(h)
         return out, h
@@ -80,12 +77,17 @@ def train(data):
     return loss, h
 
 
+# 测试函数
 def test(model, data):
     model.eval()
-    _, pred = model(data).max(dim=1)
-    correct = int(pred[data.test_mask].eq(data.y[data.test_mask]).sum().item())
-    acc = correct / int(data.test_mask.sum())
-    print('GCN Accuracy: {:.4f}'.format(acc))
+    with torch.no_grad():
+        out, _ = model(data.x, data.edge_index)
+        pred = out.argmax(dim=1)
+        correct = float(pred[data.train_mask].eq(
+            data.y[data.train_mask]).sum().item())
+        acc = correct / data.train_mask.sum().item()
+    model.train()
+    return acc
 
 
 if __name__ == '__main__':
@@ -96,8 +98,6 @@ if __name__ == '__main__':
     data = DataSet()
     dataset = data.data
 
-    print(dataset)
-
     # 声明GCN模型
     model = GCN(dataset.num_features, dataset.num_classes)
 
@@ -107,8 +107,12 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # 训练
-    for epoch in range(401):
+    for epoch in range(1001):
         loss, h = train(dataset)
-        if epoch % 100 == 0:
-            visualize_embedding(h, color=dataset.y, epoch=epoch, loss=loss)
-            time.sleep(0.3)
+        # if epoch % 500 == 0:
+        #     visualize_embedding(h, color=dataset.y, epoch=epoch, loss=loss)
+        #     time.sleep(0.3)
+
+    # 测试
+    test_acc = test(model=model, data=dataset)
+    print(f"Test Accuracy: {test_acc:.4f}")

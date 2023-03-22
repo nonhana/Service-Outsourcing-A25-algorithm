@@ -460,53 +460,25 @@ class GCN(torch.nn.Module):
         return out, h
 
 
-# 计算损失率
-def get_val_loss(model, data):
+# 测试函数
+def test(model, data):
     model.eval()
-    out = model(data)
-    loss_function = torch.nn.CrossEntropyLoss().to(device)
-    loss = loss_function(out[data.val_mask], data.y[data.val_mask])
+    with torch.no_grad():
+        out, _ = model(data.x, data.edge_index)
+        pred = out.argmax(dim=1)
+        correct = float(pred[data.train_mask].eq(
+            data.y[data.train_mask]).sum().item())
+        acc = correct / data.train_mask.sum().item()
     model.train()
-    return loss.item()
-
-
-# 训练函数
-def train(data):
-    optimizer.zero_grad()
-    out, h = model(data.x, data.edge_index)
-    loss = criterion(out[data.train_mask], data.y[data.train_mask])
-    loss.backward()
-    optimizer.step()
-    return loss, h
+    return acc
 
 
 if __name__ == "__main__":
-    # =====================训练代码===================== #
-    # 不加这个可能会报错
-    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
-    # 数据集准备
-    dataset = [DataSet('data改性塑料.txt').data, DataSet(
-        'data膜材料.txt').data, DataSet('data合成树脂.txt').data]
-
-    # 定义超参数
-    learning_rate = 0.015
-
-    # 声明GCN模型
-    model = GCN(num_features=dataset[0].num_features,
-                num_classes=dataset[0].num_classes)
-
-    # 定义损失函数和优化器
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-    # 训练模型
-    # 训练
-    for epoch in range(3001):
-        for i in range(len(dataset)):
-            loss, h = train(dataset[i])
-        # if epoch % 500 == 0:
-        #     visualize_embedding(h, color=dataset.y, epoch=epoch, loss=loss)
-        #     time.sleep(0.3)
-    # 保存模型
-    torch.save(model.state_dict(), 'gcn_model.pth')
+  # =====================测试代码===================== #
+  dataset = DataSet('data改性塑料.txt').data
+  # 加载模型
+  model = GCN(dataset.num_features, dataset.num_classes)
+  model.load_state_dict(torch.load('gcn_model.pth'))
+  # 进行测试
+  test_acc = test(model=model,data=dataset)
+  print(f"Test Accuracy: {test_acc:.4f}")
