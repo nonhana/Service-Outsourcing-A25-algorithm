@@ -1,13 +1,10 @@
 import os
-import time
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
-from torch.utils.data import DataLoader
 from torch.nn import Linear
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -319,9 +316,10 @@ class IndustryGraph:
         list = []
         for item in eigenvector:
             list.append(eigenvector[item])
+        print(len(list))
         # 计算度中心度 紧密中心度 中介中心度
         handler = DataSource(filename)
-        self.add_node_edge(handler.node, handler.edge)
+        self.add_node_edge(self.name_labels, handler.edge)
         d = nx.degree_centrality(self.G)
         c = nx.closeness_centrality(self.G)
         b = nx.betweenness_centrality(self.G)
@@ -436,6 +434,7 @@ class DataSet:
         self.data.num_classes = int(torch.max(self.data.y).item() + 1)
 
 
+
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
         super(GCN, self).__init__()
@@ -481,32 +480,30 @@ def train(data):
 
 
 if __name__ == "__main__":
-    # =====================训练代码===================== #
-    # 不加这个可能会报错
-    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+    dataset = DataSet('data膜材料.txt').data
+    # # =====================训练代码===================== #
+    # # 不加这个可能会报错
+    # os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-    # 数据集准备
-    dataset = [DataSet('data改性塑料.txt').data, DataSet(
-        'data膜材料.txt').data, DataSet('data合成树脂.txt').data]
+    # # 数据集准备
+    # dataset = [DataSet('data改性塑料.txt').data, DataSet(
+    #     'data膜材料.txt').data, DataSet('data合成树脂.txt').data]
 
-    # 定义超参数
-    learning_rate = 0.015
+    # # 定义超参数
+    # learning_rate = 0.015
 
-    # 声明GCN模型
-    model = GCN(num_features=dataset[0].num_features,
-                num_classes=dataset[0].num_classes)
+    # # 声明GCN模型
+    # model = GCN(num_features=dataset[0].num_features,
+    #             num_classes=dataset[0].num_classes)
 
-    # 定义损失函数和优化器
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # # 定义损失函数和优化器
+    # criterion = torch.nn.CrossEntropyLoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # 训练模型
-    # 训练
-    for epoch in range(3001):
-        for i in range(len(dataset)):
-            loss, h = train(dataset[i])
-        # if epoch % 500 == 0:
-        #     visualize_embedding(h, color=dataset.y, epoch=epoch, loss=loss)
-        #     time.sleep(0.3)
-    # 保存模型
-    torch.save(model.state_dict(), 'gcn_model.pth')
+    # # 训练模型
+    # # 训练
+    # for epoch in range(4001):
+    #     for i in range(len(dataset)):
+    #         loss, h = train(dataset[i])
+    # # 保存模型
+    # torch.save(model.state_dict(), 'gcn_model.pth')

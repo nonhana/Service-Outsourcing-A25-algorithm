@@ -1,4 +1,3 @@
-import time
 import os
 import matplotlib.pyplot as plt
 import torch
@@ -6,19 +5,6 @@ from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
 from torch.nn import Linear
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-# 画点函数
-def visualize_embedding(h, color, epoch=None, loss=None):
-    # figsize:生成图像大小
-    plt.figure(figsize=(7, 7))
-    plt.xticks([])
-    plt.yticks([])
-    h = h.detach().cpu().numpy()
-    plt.scatter(h[:, 0], h[:, 1], s=140, c=color, cmap="Set2")
-    if epoch is not None and loss is not None:
-        plt.xlabel(f'Epoch:{epoch},Loss:{loss.item():.4f}', fontsize=16)
-    plt.show()
 
 
 class DataSet:
@@ -109,9 +95,6 @@ if __name__ == '__main__':
     # 训练
     for epoch in range(1001):
         loss, h = train(dataset)
-        # if epoch % 500 == 0:
-        #     visualize_embedding(h, color=dataset.y, epoch=epoch, loss=loss)
-        #     time.sleep(0.3)
 
     # 测试
     test_acc = test(model=model, data=dataset)

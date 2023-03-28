@@ -1,15 +1,10 @@
-import os
-import time
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
-from torch.utils.data import DataLoader
 from torch.nn import Linear
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class DataSource:
@@ -184,6 +179,8 @@ class DataSource:
             item += (1.0,)
             self.edge.append(item)
             del item
+
+        print(len(self.node))
 
 
 # 实现邻接表
@@ -474,11 +471,11 @@ def test(model, data):
 
 
 if __name__ == "__main__":
-  # =====================测试代码===================== #
-  dataset = DataSet('data改性塑料.txt').data
-  # 加载模型
-  model = GCN(dataset.num_features, dataset.num_classes)
-  model.load_state_dict(torch.load('gcn_model.pth'))
-  # 进行测试
-  test_acc = test(model=model,data=dataset)
-  print(f"Test Accuracy: {test_acc:.4f}")
+    # =====================测试代码===================== #
+    dataset = DataSet('data膜材料.txt').data
+    # # 加载模型
+    # model = GCN(dataset.num_features, dataset.num_classes)
+    # model.load_state_dict(torch.load('gcn_model.pth'))
+    # # 进行测试
+    # test_acc = test(model=model, data=dataset)
+    # print(f"Test Accuracy: {test_acc:.4f}")
