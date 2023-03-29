@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import torch
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GATConv
 from torch.nn import Linear
 
 
@@ -439,9 +439,9 @@ class GCN(torch.nn.Module):
         torch.manual_seed(520)
         self.num_features = num_features
         self.num_classes = num_classes
-        self.conv1 = GCNConv(self.num_features, 16)
-        self.conv2 = GCNConv(16, 32)
-        self.conv3 = GCNConv(32, self.num_classes)
+        self.conv1 = GATConv(self.num_features, 16)
+        self.conv2 = GATConv(16, 32)
+        self.conv3 = GATConv(32, self.num_classes)
         self.classifier = Linear(self.num_classes, self.num_classes)
 
     def forward(self, x, edge_index):
@@ -462,6 +462,8 @@ def test(model, data):
     model.eval()
     with torch.no_grad():
         out, _ = model(data.x, data.edge_index)
+        # 将out的形状从(batch_size, num_classes * heads)改为(batch_size, num_classes)
+        out = out.view(-1, dataset.num_classes)
         pred = out.argmax(dim=1)
         correct = float(pred[data.train_mask].eq(
             data.y[data.train_mask]).sum().item())
@@ -472,10 +474,10 @@ def test(model, data):
 
 if __name__ == "__main__":
     # =====================测试代码===================== #
-    dataset = DataSet('data膜材料.txt').data
-    # # 加载模型
-    # model = GCN(dataset.num_features, dataset.num_classes)
-    # model.load_state_dict(torch.load('gcn_model.pth'))
-    # # 进行测试
-    # test_acc = test(model=model, data=dataset)
-    # print(f"Test Accuracy: {test_acc:.4f}")
+    dataset = DataSet('data其他塑料制品.txt').data
+    # 加载模型
+    model = GCN(dataset.num_features, dataset.num_classes)
+    model.load_state_dict(torch.load('gcn_model.pth'))
+    # 进行测试
+    test_acc = test(model=model, data=dataset)
+    print(f"Test Accuracy: {test_acc:.4f}")

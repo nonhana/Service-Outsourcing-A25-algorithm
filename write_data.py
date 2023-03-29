@@ -54,7 +54,7 @@ class ReadGraph:
         file_handle = open('data涤纶.txt', mode='w')
 
         # 定义cql语句
-        cql = 'match (n:industry {name:"基础化工"})-[r1]-(m1:industry {name:"化学纤维"})-[r2]-(m2:industry)-[r3]-(m3)-[r4]-(m4)-[r5]->(m5)-[r6:`上游材料`]-(m6) return n,r1,m1,r2,m2,r3,m3,r4,m4,r5,m5,r6,m6 limit 300'
+        cql = 'match (n:industry {name:"基础化工"})-[r1]-(m1:industry {name:"涤纶"})-[r2]-(m2:industry)-[r3]-(m3)-[r4]-(m4)-[r5]->(m5)-[r6:`上游材料`]-(m6) return n,r1,m1,r2,m2,r3,m3,r4,m4,r5,m5,r6,m6 limit 150'
 
         # 查询
         n = self.g.run(cql).data('n')

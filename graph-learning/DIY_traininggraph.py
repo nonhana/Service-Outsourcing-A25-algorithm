@@ -1,8 +1,7 @@
 import os
-import matplotlib.pyplot as plt
 import torch
 from torch_geometric.data import Data
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GATConv
 from torch.nn import Linear
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -29,12 +28,12 @@ class GCN(torch.nn.Module):
         torch.manual_seed(520)
         self.num_features = num_features
         self.num_classes = num_classes
-        self.conv1 = GCNConv(self.num_features, 16)
-        self.conv2 = GCNConv(16, self.num_classes)
+        self.conv1 = GATConv(self.num_features, 16, heads=4, concat=True)
+        self.conv2 = GATConv(16 * 4, self.num_classes, heads=1, concat=True)
         self.classifier = Linear(self.num_classes, self.num_classes)
 
     def forward(self, x, edge_index):
-        # 2层GCN
+        # 2层GAT
         h = self.conv1(x, edge_index)
         h = h.relu()
         h = self.conv2(h, edge_index)
@@ -68,6 +67,8 @@ def test(model, data):
     model.eval()
     with torch.no_grad():
         out, _ = model(data.x, data.edge_index)
+        # 将out的形状从(batch_size, num_classes * heads)改为(batch_size, num_classes)
+        out = out.view(-1, dataset.num_classes)
         pred = out.argmax(dim=1)
         correct = float(pred[data.train_mask].eq(
             data.y[data.train_mask]).sum().item())
