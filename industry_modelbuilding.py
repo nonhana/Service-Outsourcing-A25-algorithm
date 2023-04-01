@@ -6,6 +6,7 @@ import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import GATConv
 from torch.nn import Linear
+from torch.utils.data import DataLoader, ConcatDataset
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -480,24 +481,18 @@ def train(data):
 
 if __name__ == "__main__":
     # =====================训练代码===================== #
-    # 不加这个可能会报错
+    # 设置环境变量，避免KMP Duplicate Libs警告。
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
     # 数据集准备
-    dataset = [DataSet('data改性塑料.txt').data, DataSet(
-        'data膜材料.txt').data, DataSet('data合成树脂.txt').data, DataSet('data化学原料.txt').data, DataSet('data塑料.txt').data]
-
+    dataset = [DataSet('data改性塑料.txt').data]
     # 定义超参数
     learning_rate = 0.015
-
     # 声明GCN模型
     model = GCN(num_features=dataset[0].num_features,
                 num_classes=dataset[0].num_classes)
-
     # 定义损失函数和优化器
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
     # 训练模型
     # 训练
     for epoch in range(4001):

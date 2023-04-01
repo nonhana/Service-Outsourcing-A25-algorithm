@@ -180,8 +180,6 @@ class DataSource:
             self.edge.append(item)
             del item
 
-        print(len(self.node))
-
 
 # 实现邻接表
 class Vertex:
@@ -459,25 +457,37 @@ class GCN(torch.nn.Module):
 
 # 测试函数
 def test(model, data):
+    # 将模型设置为评估模式
     model.eval()
+    # 禁用梯度计算，以减少内存的使用
     with torch.no_grad():
+        # 对数据进行前向传播
         out, _ = model(data.x, data.edge_index)
         # 将out的形状从(batch_size, num_classes * heads)改为(batch_size, num_classes)
         out = out.view(-1, dataset.num_classes)
+        # 预测标签，选择out中的最大值作为预测结果
         pred = out.argmax(dim=1)
+        # 计算训练集中预测正确的样本数
         correct = float(pred[data.train_mask].eq(
             data.y[data.train_mask]).sum().item())
+        # 计算训练集上的准确率
         acc = correct / data.train_mask.sum().item()
+    # 将模型重新设置为训练模式
     model.train()
+    # 返回训练集上的准确率
     return acc
 
 
+
 if __name__ == "__main__":
-    # =====================测试代码===================== #
+    # 创建数据集
     dataset = DataSet('data其他塑料制品.txt').data
-    # 加载模型
+    # 创建GCN模型
     model = GCN(dataset.num_features, dataset.num_classes)
+    # 加载预训练的模型参数
     model.load_state_dict(torch.load('gcn_model.pth'))
-    # 进行测试
+    # 在测试集上评估模型的准确率
     test_acc = test(model=model, data=dataset)
+    # 打印测试集上的准确率
     print(f"Test Accuracy: {test_acc:.4f}")
+
