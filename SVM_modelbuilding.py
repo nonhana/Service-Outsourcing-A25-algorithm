@@ -1,13 +1,19 @@
-import os
-import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn import svm
+from torch.nn import Linear
+from torch_geometric.nn import GATConv
+from torch_geometric.data import Data
+import torch
 import networkx as nx
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
-import seaborn as sns
-import torch
-from torch_geometric.data import Data
-from torch_geometric.nn import GATConv
-from torch.nn import Linear
+import numpy as np
+import os
+import warnings
+warnings.filterwarnings("ignore")
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -310,7 +316,7 @@ class IndustryGraph:
     def __iter__(self):
         return iter(self.vertList.values())
 
-    # 特征值
+    # 特征向量的提取：[节点的中心度,度中心度,紧密中心度,介数中心度]
     def feature_calculate(self, filename):
         # 计算节点的中心度
         eigenvector = nx.eigenvector_centrality(self.visble)
@@ -318,7 +324,7 @@ class IndustryGraph:
         for item in eigenvector:
             list.append(eigenvector[item])
         print(len(list))
-        # 计算度中心度 紧密中心度 中介中心度
+        # 计算度中心度、紧密中心度、介数中心度
         handler = DataSource(filename)
         self.add_node_edge(self.name_labels, handler.edge)
         d = nx.degree_centrality(self.G)
@@ -333,74 +339,6 @@ class IndustryGraph:
         for i in range(len(list)):
             self.feature_vector[i].append(list[i])
         return
-
-
-# 创建图
-def visualize_graph(G):
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True)  # 绘制节点和边
-    plt.show()  # 显示图形
-
-
-# 创建热图
-def visualize_heatmap(matrix):
-    sns.heatmap(matrix, cmap='coolwarm', annot=True, fmt=".2f", linewidths=0.5)
-    plt.xticks([])
-    plt.yticks([])
-    plt.show()
-
-
-# 创建t-SNE图
-def visualize_tsne(h, color, epoch=None, loss=None):
-    # 使用 t-SNE 进行降维
-    tsne = TSNE(n_components=2)
-    h_tsne = tsne.fit_transform(h.detach().cpu().numpy())
-    # 绘制可视化图
-    plt.figure(figsize=(7, 7))
-    plt.xticks([])
-    plt.yticks([])
-    plt.scatter(h_tsne[:, 0], h_tsne[:, 1], s=140, c=color, cmap="Set2")
-    if epoch is not None and loss is not None:
-        plt.xlabel(f'Epoch:{epoch},Loss:{loss.item():.4f}', fontsize=16)
-    plt.show()
-
-
-# 画点函数
-def visualize_embedding(h, color, epoch=None, loss=None):
-    # figsize:生成图像大小
-    plt.figure(figsize=(7, 7))
-    plt.xticks([])
-    plt.yticks([])
-    h = h.detach().cpu().numpy()
-    plt.scatter(h[:, 0], h[:, 1], s=140, c=color, cmap="Set2")
-    if epoch is not None and loss is not None:
-        plt.xlabel(f'Epoch:{epoch},Loss:{loss.item():.4f}', fontsize=16)
-    plt.show()
-
-
-# 损失率折线图
-def visualize_loss(loss_values):
-    epochs = range(len(loss_values))
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, loss_values, 'b-')
-    plt.title('Loss Changing Trend')
-    plt.xlabel('Training Epoch')
-    plt.ylabel('Loss')
-    plt.grid(True)
-    plt.show()
-
-
-# 准确率折线图
-def visualize_accuracy(accuracy_values):
-    epochs = range(len(accuracy_values))
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, accuracy_values, 'b-')
-    plt.title('Accuracy Changing Trend')
-    plt.xlabel('Training Epoch')
-    plt.ylabel('Accuracy')
-    plt.grid(True)
-    plt.show()
 
 
 class DataSet:
@@ -557,63 +495,116 @@ def test(model, data):
     return acc
 
 
+# 准确率折线图
+def visualize_accuracy(accuracy_values):
+    epochs = range(len(accuracy_values))
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, accuracy_values, 'b-')
+    plt.title('Accuracy Changing Trend')
+    plt.xlabel('Training Epoch')
+    plt.ylabel('Accuracy')
+    plt.grid(True)
+    plt.show()
+
+
+def visualize_classification_result(X_test, y_test, y_pred, classifier):
+    cmap_light = ListedColormap(['#FFAAAA', '#AAFFAA', '#AAAAFF'])  # 浅色调色板
+    cmap_bold = ListedColormap(['#FF0000', '#00FF00', '#0000FF'])  # 深色调色板
+
+    # 绘制分类区域
+    x_min, x_max = X_test[:, 0].min() - 1, X_test[:, 0].max() + 1
+    y_min, y_max = X_test[:, 1].min() - 1, X_test[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                         np.arange(y_min, y_max, 0.02))
+    Z = classifier.predict(np.c_[xx.ravel(), yy.ravel(), np.zeros_like(
+        xx.ravel()), np.zeros_like(xx.ravel())])
+    Z = Z.reshape(xx.shape)
+    plt.figure()
+    plt.pcolormesh(xx, yy, Z, cmap=cmap_light)
+
+    # 绘制训练样本点
+    plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap=cmap_bold,
+                edgecolor='k', s=20)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("Classification Result")
+    plt.show()
+
+
 if __name__ == "__main__":
     # =====================训练代码===================== #
     # 设置环境变量，避免KMP Duplicate Libs警告。
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
     # 数据集准备
-    dataset = [DataSet('./txt_datas/data改性塑料.txt').data]
-    G = DataSet('./txt_datas/data改性塑料.txt').g.visble
-    # 数据集可视化
-    # visualize_graph(G)
-    # 定义超参数
-    learning_rate = 0.015
-    # 声明GCN模型
-    model = GCN(num_features=dataset[0].num_features,
-                num_classes=dataset[0].num_classes)
-    # 定义损失函数和优化器
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    sourceData = DataSet('./txt_datas/data膜材料.txt')
+    dataset = [DataSet('./txt_datas/data膜材料.txt').data]
 
-    # 训练模型
+    # 声明SVM模型
+    SVM_X = np.array(sourceData.g.feature_vector)
+    SVM_Y = np.array(sourceData.g.labels)
 
-    # 定义损失值列表
-    loss_values = []
+    # 优化后
+    # 定义参数网格和SVM模型
+    param_grid = {
+        'C': [0.1, 1, 10],
+        'kernel': ['linear', 'rbf'],
+        'gamma': ['scale', 'auto']
+    }
+    svm = SVC(random_state=42)
 
-    # 定义准确率列表
+    grid_search = GridSearchCV(estimator=svm, param_grid=param_grid, cv=5)
+
+    num_trainings = 1001
     accuracy_values = []
 
-    # 定义可视化计数器和可视化间隔
-    visualization_counter = 0
-    visualization_interval = 300
+    for i in range(num_trainings):
+        X_train, X_test, y_train, y_test = train_test_split(
+            SVM_X, SVM_Y, test_size=0.2, random_state=i)
 
-    # 训练模型
-    for epoch in range(4201):
-        for i in range(len(dataset)):
-            # 训练代码
-            loss, h = train(dataset[i])
-        # 更新可视化计数器
-        visualization_counter += 1
-        # 每隔 visualization_interval 个 epoch 进行可视化
-        if visualization_counter == visualization_interval:
-            color = ['g'] * len(h)
-            # 调用可视化函数
-            # visualize_tsne(h, color, epoch=epoch, loss=loss)
-            # plt.pause(0.001)  # 暂停一小段时间，使图像更新
-            # 重置计数器
-            visualization_counter = 0
-        # 将当前的损失值添加到列表中
-        loss_values.append(loss.item())
-        # 计算当前模型在训练集上的准确率
-        accuracy = test(model, dataset[i])
-        # 将当前的准确率添加到列表中
+        grid_search.fit(X_train, y_train)
+
+        best_params = grid_search.best_params_
+        best_score = grid_search.best_score_
+
+        best_svm = SVC(**best_params, random_state=42)
+        best_svm.fit(X_train, y_train)
+
+        y_pred = best_svm.predict(X_test)
+
+        accuracy = np.mean(y_pred == y_test)
         accuracy_values.append(accuracy)
 
-    # 绘制准确率随训练次数的变化趋势
+        # 每经过200次训练，进行可视化
+        if (i + 1) % 300 == 0:
+            visualize_classification_result(
+                X_test[:, :2], y_test, y_pred, best_svm)
+
+    plt.plot(range(1, num_trainings + 1), accuracy_values)
+    plt.xlabel("Training Iterations")
+    plt.ylabel("Accuracy")
+    plt.title("Accuracy vs Training Iterations")
+    plt.show()
+
+    # # 优化前
+    # scaler = StandardScaler()
+    # SVM_X = scaler.fit_transform(SVM_X)
+
+    # svm = SVC(kernel='linear', random_state=42)
+
+    # num_trainings = 1001
+
+    # accuracy_values = []
+
+    # for i in range(num_trainings):
+    #     X_train, X_test, y_train, y_test = train_test_split(
+    #         SVM_X, SVM_Y, test_size=0.2, random_state=i)
+
+    #     svm.fit(X_train, y_train)
+
+    #     y_pred = svm.predict(X_test)
+
+    #     accuracy = np.mean(y_pred == y_test)
+    #     accuracy_values.append(accuracy)
+
     # visualize_accuracy(accuracy_values)
-
-    # 绘制损失随训练次数的变化趋势
-    # visualize_loss(loss_values)
-
-    # 保存模型
-    torch.save(model.state_dict(), 'gcn_model.pth')

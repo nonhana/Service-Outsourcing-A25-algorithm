@@ -464,7 +464,7 @@ def test(model, data):
         # 对数据进行前向传播
         out, _ = model(data.x, data.edge_index)
         # 将out的形状从(batch_size, num_classes * heads)改为(batch_size, num_classes)
-        out = out.view(-1, dataset.num_classes)
+        out = out.view(-1, data.num_classes)
         # 预测标签，选择out中的最大值作为预测结果
         pred = out.argmax(dim=1)
         # 计算训练集中预测正确的样本数
@@ -478,10 +478,9 @@ def test(model, data):
     return acc
 
 
-
 if __name__ == "__main__":
     # 创建数据集
-    dataset = DataSet('data其他塑料制品.txt').data
+    dataset = DataSet('txt_datas/data化学原料.txt').data
     # 创建GCN模型
     model = GCN(dataset.num_features, dataset.num_classes)
     # 加载预训练的模型参数
@@ -490,4 +489,3 @@ if __name__ == "__main__":
     test_acc = test(model=model, data=dataset)
     # 打印测试集上的准确率
     print(f"Test Accuracy: {test_acc:.4f}")
-
